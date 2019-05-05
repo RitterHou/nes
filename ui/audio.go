@@ -2,8 +2,9 @@ package ui
 
 import "github.com/gordonklaus/portaudio"
 
+// 声音相关的配置
 type Audio struct {
-	stream         *portaudio.Stream
+	stream         *portaudio.Stream // 跨平台的声音库
 	sampleRate     float64
 	outputChannels int
 	channel        chan float32
@@ -16,6 +17,7 @@ func NewAudio() *Audio {
 }
 
 func (a *Audio) Start() error {
+	// 获取到默认的声音设备
 	host, err := portaudio.DefaultHostApi()
 	if err != nil {
 		return err

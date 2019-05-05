@@ -180,6 +180,7 @@ func NewCPU(console *Console) *CPU {
 }
 
 // createTable builds a function table for each instruction
+// 设定CPU的指令集
 func (c *CPU) createTable() {
 	c.table = [256]func(*stepInfo){
 		c.brk, c.ora, c.kil, c.slo, c.nop, c.ora, c.asl, c.slo,

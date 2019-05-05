@@ -30,6 +30,7 @@ func Run(paths []string) {
 	defer portaudio.Terminate()
 
 	audio := NewAudio()
+	// 开启声音设备
 	if err := audio.Start(); err != nil {
 		log.Fatalln(err)
 	}
@@ -42,8 +43,9 @@ func Run(paths []string) {
 	defer glfw.Terminate()
 
 	// create window
-	glfw.WindowHint(glfw.ContextVersionMajor, 2)
-	glfw.WindowHint(glfw.ContextVersionMinor, 1)
+	// glfw是opengl的一个轻量级工具库
+	glfw.WindowHint(glfw.ContextVersionMajor, 2) // 主版本
+	glfw.WindowHint(glfw.ContextVersionMinor, 1) // 副版本
 	window, err := glfw.CreateWindow(width*scale, height*scale, title, nil, nil)
 	if err != nil {
 		log.Fatalln(err)
@@ -57,6 +59,7 @@ func Run(paths []string) {
 	gl.Enable(gl.TEXTURE_2D)
 
 	// run director
+	// 传入视频和音频配置
 	director := NewDirector(window, audio)
 	director.Start(paths)
 }

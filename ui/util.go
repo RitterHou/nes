@@ -115,6 +115,7 @@ func combineButtons(a, b [8]bool) [8]bool {
 	return result
 }
 
+// 计算出指定路径上文件的md5值，并转化为16进制
 func hashFile(path string) (string, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {

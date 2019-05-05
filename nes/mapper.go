@@ -13,6 +13,7 @@ type Mapper interface {
 	Load(decoder *gob.Decoder) error
 }
 
+// 根据NES游戏文件中的mapper属性确定使用的mapper
 func NewMapper(console *Console) (Mapper, error) {
 	cartridge := console.Cartridge
 	switch cartridge.Mapper {

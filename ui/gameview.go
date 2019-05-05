@@ -20,6 +20,7 @@ type GameView struct {
 	frames   []image.Image
 }
 
+// 创建游戏view
 func NewGameView(director *Director, console *nes.Console, title, hash string) View {
 	texture := createTexture()
 	return &GameView{director, console, title, hash, texture, false, nil}
@@ -31,10 +32,12 @@ func (view *GameView) Enter() {
 	view.console.SetAudioChannel(view.director.audio.channel)
 	view.console.SetAudioSampleRate(view.director.audio.sampleRate)
 	view.director.window.SetKeyCallback(view.onKey)
-	// load state
+	// load state，读取已经保存的游戏状态
 	if err := view.console.LoadState(savePath(view.hash)); err == nil {
+		// 如果读取成功则直接返回
 		return
 	} else {
+		// 未能读取到游戏状态数据则需要进行初始化
 		view.console.Reset()
 	}
 	// load sram
@@ -55,10 +58,11 @@ func (view *GameView) Exit() {
 	if cartridge.Battery != 0 {
 		writeSRAM(sramPath(view.hash), cartridge.SRAM)
 	}
-	// save state
+	// save state，退出前保存游戏状态
 	view.console.SaveState(savePath(view.hash))
 }
 
+// 更新游戏画面
 func (view *GameView) Update(t, dt float64) {
 	if dt > 1 {
 		dt = 0
@@ -75,9 +79,12 @@ func (view *GameView) Update(t, dt float64) {
 		view.director.ShowMenu()
 	}
 	updateControllers(window, console)
+	// 设置时间差
 	console.StepSeconds(dt)
 	gl.BindTexture(gl.TEXTURE_2D, view.texture)
+	// 设置图像内容
 	setTexture(console.Buffer())
+	// 在屏幕上面画出图像
 	drawBuffer(view.director.window)
 	gl.BindTexture(gl.TEXTURE_2D, 0)
 	if view.record {

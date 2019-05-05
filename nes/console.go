@@ -20,22 +20,28 @@ type Console struct {
 }
 
 func NewConsole(path string) (*Console, error) {
+	// 加载并解析，得到NES游戏文件详细信息
 	cartridge, err := LoadNESFile(path)
 	if err != nil {
 		return nil, err
 	}
-	ram := make([]byte, 2048)
-	controller1 := NewController()
-	controller2 := NewController()
+	ram := make([]byte, 2048)      // 模拟硬件拥有2k内存
+	controller1 := NewController() // 控制器1
+	controller2 := NewController() // 控制器2
+	// 根据游戏文件、控制器和内存属性新建控制台
 	console := Console{
 		nil, nil, nil, cartridge, controller1, controller2, nil, ram}
+	// 根据游戏文件的mapper属性，创建对应的mapper
 	mapper, err := NewMapper(&console)
 	if err != nil {
 		return nil, err
 	}
 	console.Mapper = mapper
+	// center process unit 负责执行程序指令
 	console.CPU = NewCPU(&console)
+	// audio process unit 负责播放游戏的声音
 	console.APU = NewAPU(&console)
+	// picture process unit 负责显示游戏的图像
 	console.PPU = NewPPU(&console)
 	return &console, nil
 }
