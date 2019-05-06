@@ -82,9 +82,9 @@ func (d *Director) Start(paths []string) {
 func (d *Director) Run() {
 	// 最核心的死循环
 	for !d.window.ShouldClose() {
-		d.Step()               // 取指执行
-		d.window.SwapBuffers() // 图像切换？
-		glfw.PollEvents()      // 接受外界的输入信息，例如按键、手柄，等待
+		d.Step()               // 单步执行
+		d.window.SwapBuffers() // glfw使用双缓冲，交换缓冲可以把设置好的缓冲置换到当前的画布上
+		glfw.PollEvents()      // 获取输入事件，为下一次的渲染做准备
 	}
 	// 退出时把视图清空
 	d.SetView(nil)

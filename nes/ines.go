@@ -32,6 +32,7 @@ func LoadNESFile(path string) (*Cartridge, error) {
 
 	// read file header
 	header := iNESFileHeader{}
+	// 居然还能这么玩。。。学到了
 	if err := binary.Read(file, binary.LittleEndian, &header); err != nil {
 		return nil, err
 	}

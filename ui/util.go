@@ -101,6 +101,7 @@ func readJoystick(joy glfw.Joystick, turbo bool) [8]bool {
 }
 
 func joystickReset(joy glfw.Joystick) bool {
+	// 如果没有设备，返回false
 	if !glfw.JoystickPresent(joy) {
 		return false
 	}
@@ -140,6 +141,7 @@ func createTexture() uint32 {
 	return texture
 }
 
+// 画出图像
 func setTexture(im *image.RGBA) {
 	size := im.Rect.Size()
 	gl.TexImage2D(

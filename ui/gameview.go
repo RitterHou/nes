@@ -26,6 +26,7 @@ func NewGameView(director *Director, console *nes.Console, title, hash string) V
 	return &GameView{director, console, title, hash, texture, false, nil}
 }
 
+// 进入游戏前的操作
 func (view *GameView) Enter() {
 	gl.ClearColor(0, 0, 0, 1)
 	view.director.SetTitle(view.title) // 视图的title其实就是游戏的path
@@ -44,20 +45,26 @@ func (view *GameView) Enter() {
 	}
 	// load sram
 	cartridge := view.console.Cartridge
+	// 游戏本身支持持久化的存储数据
 	if cartridge.Battery != 0 {
 		if sram, err := readSRAM(sramPath(view.hash)); err == nil {
+			// 如果可以，则读取save ram的信息
 			cartridge.SRAM = sram
 		}
 	}
 }
 
+// 游戏退出前的操作
 func (view *GameView) Exit() {
+	// 清除回调和声音相关的设置
 	view.director.window.SetKeyCallback(nil)
 	view.console.SetAudioChannel(nil)
 	view.console.SetAudioSampleRate(0)
 	// save sram
 	cartridge := view.console.Cartridge
+	// 游戏本身支持持久化的存储数据
 	if cartridge.Battery != 0 {
+		// 保存save ram的信息
 		writeSRAM(sramPath(view.hash), cartridge.SRAM)
 	}
 	// save state，退出前保存游戏状态
@@ -65,30 +72,42 @@ func (view *GameView) Exit() {
 }
 
 // 更新游戏画面
+// t  当前的时间戳
+// dt 此次执行与上次执行之间的时间差
 func (view *GameView) Update(t, dt float64) {
 	if dt > 1 {
 		dt = 0
 	}
 	window := view.director.window
 	console := view.console
+	// 按下摇杆的指定按键，显示menu
 	if joystickReset(glfw.Joystick1) {
 		view.director.ShowMenu()
 	}
+	// 按下摇杆的指定按键，显示menu
 	if joystickReset(glfw.Joystick2) {
 		view.director.ShowMenu()
 	}
+	// 按下键盘的esc，显示menu
 	if readKey(window, glfw.KeyEscape) {
 		view.director.ShowMenu()
 	}
+	// 更新按键信息
 	updateControllers(window, console)
-	// 设置时间差
+	// 根据时间差运行游戏程序~~
 	console.StepSeconds(dt)
+
+	// 通过纹理来实现opengl的渲染，纹理本质上就是通过图片进行渲染？
+	// 在step的游戏程序运行完毕之后，把texture绑定到gl上
 	gl.BindTexture(gl.TEXTURE_2D, view.texture)
-	// 设置图像内容
+	// 根据游戏运行情况，创建一个2d纹理
 	setTexture(console.Buffer())
-	// 在屏幕上面画出图像
+	// 把2d纹理完整的渲染到画布上
 	drawBuffer(view.director.window)
+	// 清空texture的绑定
 	gl.BindTexture(gl.TEXTURE_2D, 0)
+
+	// 如果开启了录像，则保存帧为图片
 	if view.record {
 		view.frames = append(view.frames, copyImage(console.Buffer()))
 	}
@@ -118,6 +137,7 @@ func (view *GameView) onKey(window *glfw.Window,
 	}
 }
 
+// 通过坐标，把纹理完整的渲染到画布上
 func drawBuffer(window *glfw.Window) {
 	w, h := window.GetFramebufferSize()
 	s1 := float32(w) / 256
@@ -143,7 +163,9 @@ func drawBuffer(window *glfw.Window) {
 	gl.End()
 }
 
+// 更新按键信息
 func updateControllers(window *glfw.Window, console *nes.Console) {
+	// 这个turbo是干啥用的？
 	turbo := console.PPU.Frame%6 < 3
 	k1 := readKeys(window, turbo)
 	j1 := readJoystick(glfw.Joystick1, turbo)

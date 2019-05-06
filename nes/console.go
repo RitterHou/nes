@@ -8,6 +8,7 @@ import (
 	"path"
 )
 
+// Console用于存储NES的相关的信息
 type Console struct {
 	CPU         *CPU
 	APU         *APU
@@ -19,8 +20,10 @@ type Console struct {
 	RAM         []byte
 }
 
+// Console作为NES游戏ROM的存储区域
 func NewConsole(path string) (*Console, error) {
 	// 加载并解析，得到NES游戏文件详细信息
+	// PS: 为啥别人解析就能写的那么简单，我就写的那么复杂QAQ
 	cartridge, err := LoadNESFile(path)
 	if err != nil {
 		return nil, err
@@ -72,6 +75,7 @@ func (console *Console) StepFrame() int {
 	return cpuCycles
 }
 
+// 根据时间差来决定执行多少个CPU时钟周期
 func (console *Console) StepSeconds(seconds float64) {
 	cycles := int(CPUFrequency * seconds)
 	for cycles > 0 {
