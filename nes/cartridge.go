@@ -2,6 +2,7 @@ package nes
 
 import "encoding/gob"
 
+// 直译为盒式磁带，其实就是ROM
 type Cartridge struct {
 	PRG     []byte // PRG-ROM banks
 	CHR     []byte // CHR-ROM banks

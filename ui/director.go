@@ -38,10 +38,12 @@ func (d *Director) SetTitle(title string) {
 
 // 设置视图
 func (d *Director) SetView(view View) {
+	// 移除上一个视图
 	if d.view != nil {
 		d.view.Exit()
 	}
 	d.view = view
+	// 进入新的视图
 	if d.view != nil {
 		d.view.Enter()
 	}

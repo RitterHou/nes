@@ -20,7 +20,7 @@ const (
 type MenuView struct {
 	director     *Director
 	paths        []string
-	texture      *Texture
+	texture      *Texture // 质地
 	nx, ny, i, j int
 	scroll       int
 	t            float64
@@ -40,22 +40,29 @@ func NewMenuView(director *Director, paths []string) View {
 
 func (view *MenuView) checkButtons() {
 	window := view.director.window
-	k1 := readKeys(window, false)
+	k1 := readKeys(window, false) // 读取八个按键信息
+	// NES支持两个手柄
 	j1 := readJoystick(glfw.Joystick1, false)
 	j2 := readJoystick(glfw.Joystick2, false)
+	// 任意一个设备按下了某个键，就认为这个按键被按下了
 	buttons := combineButtons(combineButtons(j1, j2), k1)
 	now := glfw.GetTime()
 	for i := range buttons {
 		if buttons[i] && !view.buttons[i] {
+			// 之前没按下，现在按下了
 			view.times[i] = now + initialDelay
 			view.onPress(i)
 		} else if !buttons[i] && view.buttons[i] {
+			// 之前按下了，现在没有按下
 			view.onRelease(i)
 		} else if buttons[i] && now >= view.times[i] {
+			// 如果按住按键不松，则每隔repeatDelay时间就产生一次按下按键的操作
+			// 产生长按的效果
 			view.times[i] = now + repeatDelay
 			view.onPress(i)
 		}
 	}
+	// 刷新按键状态
 	view.buttons = buttons
 }
 
@@ -82,6 +89,7 @@ func (view *MenuView) onRelease(index int) {
 	}
 }
 
+// 选择游戏并开始
 func (view *MenuView) onSelect() {
 	index := view.nx*(view.j+view.scroll) + view.i
 	if index >= len(view.paths) {
@@ -90,6 +98,7 @@ func (view *MenuView) onSelect() {
 	view.director.PlayGame(view.paths[index])
 }
 
+// 菜单界面的按键回调函数，用于实现快速选择游戏
 func (view *MenuView) onChar(window *glfw.Window, char rune) {
 	now := glfw.GetTime()
 	if now > view.typeTime {
@@ -113,21 +122,28 @@ func (view *MenuView) highlight(index int) {
 	view.j = (index-view.i)/view.nx - view.scroll
 }
 
+// 设置视图信息并添加按键回调函数
 func (view *MenuView) Enter() {
 	gl.ClearColor(0.333, 0.333, 0.333, 1)
 	view.director.SetTitle("Select Game")
 	view.director.window.SetCharCallback(view.onChar)
 }
 
+// 移除按键回调函数
 func (view *MenuView) Exit() {
 	view.director.window.SetCharCallback(nil)
 }
 
+// 更新菜单界面
 func (view *MenuView) Update(t, dt float64) {
+	// 检测按键信息
 	view.checkButtons()
+	// 类似于清空当前图像？
 	view.texture.Purge()
 	window := view.director.window
+	// 获得帧的宽度和高度（像素）
 	w, h := window.GetFramebufferSize()
+	// 下面好像是一大堆的宽高属性，具体含义不明
 	sx := 256 + margin*2
 	sy := 240 + margin*2
 	nx := (w - border*2) / sx

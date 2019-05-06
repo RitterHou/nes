@@ -28,9 +28,11 @@ func NewGameView(director *Director, console *nes.Console, title, hash string) V
 
 func (view *GameView) Enter() {
 	gl.ClearColor(0, 0, 0, 1)
-	view.director.SetTitle(view.title)
+	view.director.SetTitle(view.title) // 视图的title其实就是游戏的path
+	// 添加声音的相关设置
 	view.console.SetAudioChannel(view.director.audio.channel)
 	view.console.SetAudioSampleRate(view.director.audio.sampleRate)
+	// 设置按键回调
 	view.director.window.SetKeyCallback(view.onKey)
 	// load state，读取已经保存的游戏状态
 	if err := view.console.LoadState(savePath(view.hash)); err == nil {
@@ -92,15 +94,19 @@ func (view *GameView) Update(t, dt float64) {
 	}
 }
 
+// 游戏视图的按键回调
 func (view *GameView) onKey(window *glfw.Window,
 	key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 	if action == glfw.Press {
 		switch key {
 		case glfw.KeySpace:
+			// 截屏
 			screenshot(view.console.Buffer())
 		case glfw.KeyR:
+			// 重新开始游戏
 			view.console.Reset()
 		case glfw.KeyTab:
+			// 录像并保存为gif图片
 			if view.record {
 				view.record = false
 				animation(view.frames)

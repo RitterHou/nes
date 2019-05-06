@@ -50,6 +50,8 @@ func readKey(window *glfw.Window, key glfw.Key) bool {
 	return window.GetKey(key) == glfw.Press
 }
 
+// 批量读取所有按键的当前状态
+// 一共是 上，下，左，右，选择，开始，A，B 八个按键
 func readKeys(window *glfw.Window, turbo bool) [8]bool {
 	var result [8]bool
 	result[nes.ButtonA] = readKey(window, glfw.KeyZ) || (turbo && readKey(window, glfw.KeyA))
@@ -63,8 +65,10 @@ func readKeys(window *glfw.Window, turbo bool) [8]bool {
 	return result
 }
 
+// 读取摇杆的按键信息
 func readJoystick(joy glfw.Joystick, turbo bool) [8]bool {
 	var result [8]bool
+	// 如果没有检测到摇杆设备，则所有按键都是未按下，并且直接返回
 	if !glfw.JoystickPresent(joy) {
 		return result
 	}
