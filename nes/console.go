@@ -90,6 +90,7 @@ func (console *Console) StepSeconds(seconds float64) {
 	}
 }
 
+// 获取当前模拟器所渲染出来的图像
 func (console *Console) Buffer() *image.RGBA {
 	return console.PPU.front
 }

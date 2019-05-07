@@ -17,8 +17,8 @@ type PPU struct {
 	paletteData   [32]byte
 	nameTableData [2048]byte
 	oamData       [256]byte
-	front         *image.RGBA
-	back          *image.RGBA
+	front         *image.RGBA // 前台的图像属性，最终该图片会通过opengl渲染出来
+	back          *image.RGBA // 背景的图像属性
 
 	// PPU registers
 	v uint16 // current vram address (15 bit)
@@ -78,9 +78,12 @@ type PPU struct {
 	bufferedData byte // for buffered reads
 }
 
+// 创建一个新的PPU
 func NewPPU(console *Console) *PPU {
 	ppu := PPU{Memory: NewPPUMemory(console), console: console}
+	// 前台，创建一个长256、高240的图片
 	ppu.front = image.NewRGBA(image.Rect(0, 0, 256, 240))
+	// 背景，同样创建一张图片
 	ppu.back = image.NewRGBA(image.Rect(0, 0, 256, 240))
 	ppu.Reset()
 	return &ppu
@@ -445,6 +448,7 @@ func (ppu *PPU) nmiChange() {
 }
 
 func (ppu *PPU) setVerticalBlank() {
+	// 前景和背景交换？
 	ppu.front, ppu.back = ppu.back, ppu.front
 	ppu.nmiOccurred = true
 	ppu.nmiChange()
@@ -529,6 +533,7 @@ func (ppu *PPU) spritePixel() (byte, byte) {
 	return 0, 0
 }
 
+// 渲染像素为图片，最终该图片通过opengl进行显示
 func (ppu *PPU) renderPixel() {
 	x := ppu.Cycle - 1
 	y := ppu.ScanLine
