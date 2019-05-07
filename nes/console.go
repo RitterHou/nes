@@ -53,19 +53,26 @@ func (console *Console) Reset() {
 	console.CPU.Reset()
 }
 
+// 游戏运行
 func (console *Console) Step() int {
+	// CPU运行
 	cpuCycles := console.CPU.Step()
+	// ???
 	ppuCycles := cpuCycles * 3
 	for i := 0; i < ppuCycles; i++ {
+		// PPU运行
 		console.PPU.Step()
+		// mapper运行
 		console.Mapper.Step()
 	}
 	for i := 0; i < cpuCycles; i++ {
+		// APU运行
 		console.APU.Step()
 	}
 	return cpuCycles
 }
 
+// 运行并跳转到PPU的当前帧
 func (console *Console) StepFrame() int {
 	cpuCycles := 0
 	frame := console.PPU.Frame
@@ -91,10 +98,12 @@ func (console *Console) BackgroundColor() color.RGBA {
 	return Palette[console.PPU.readPalette(0)%64]
 }
 
+// 更新按键信息，按键信息是从opengl的pollEvent中获取到的
 func (console *Console) SetButtons1(buttons [8]bool) {
 	console.Controller1.SetButtons(buttons)
 }
 
+// 更新按键信息，按键信息是从opengl的pollEvent中获取到的
 func (console *Console) SetButtons2(buttons [8]bool) {
 	console.Controller2.SetButtons(buttons)
 }
@@ -117,6 +126,8 @@ func (console *Console) SetAudioSampleRate(sampleRate float64) {
 		console.APU.filterChain = nil
 	}
 }
+
+// 保存游戏的当前状态
 func (console *Console) SaveState(filename string) error {
 	dir, _ := path.Split(filename)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -131,6 +142,7 @@ func (console *Console) SaveState(filename string) error {
 	return console.Save(encoder)
 }
 
+// 保存游戏运行所产生的状态信息
 func (console *Console) Save(encoder *gob.Encoder) error {
 	encoder.Encode(console.RAM)
 	console.CPU.Save(encoder)
@@ -141,6 +153,7 @@ func (console *Console) Save(encoder *gob.Encoder) error {
 	return encoder.Encode(true)
 }
 
+// 从文件中加载游戏状态
 func (console *Console) LoadState(filename string) error {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -151,6 +164,7 @@ func (console *Console) LoadState(filename string) error {
 	return console.Load(decoder)
 }
 
+// 加载所有游戏运行所需要的状态信息
 func (console *Console) Load(decoder *gob.Decoder) error {
 	decoder.Decode(&console.RAM)
 	console.CPU.Load(decoder)

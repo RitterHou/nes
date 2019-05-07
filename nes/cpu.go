@@ -7,7 +7,7 @@ import (
 
 const CPUFrequency = 1789773
 
-// interrupt types
+// interrupt types，CPU中断类型
 const (
 	_ = iota
 	interruptNone
@@ -15,7 +15,7 @@ const (
 	interruptIRQ
 )
 
-// addressing modes
+// addressing modes，内存寻址方式
 const (
 	_ = iota
 	modeAbsolute
@@ -34,6 +34,7 @@ const (
 )
 
 // instructionModes indicates the addressing mode for each instruction
+// 不同指令有着不同的寻址模式
 var instructionModes = [256]byte{
 	6, 7, 6, 7, 11, 11, 11, 11, 6, 5, 4, 5, 1, 1, 1, 1,
 	10, 9, 6, 9, 12, 12, 12, 12, 6, 3, 6, 3, 2, 2, 2, 2,
@@ -54,6 +55,7 @@ var instructionModes = [256]byte{
 }
 
 // instructionSizes indicates the size of each instruction in bytes
+// 不同的指令占用的空间大小不一样
 var instructionSizes = [256]byte{
 	2, 2, 0, 0, 2, 2, 2, 0, 1, 2, 1, 0, 3, 3, 3, 0,
 	2, 2, 0, 0, 2, 2, 2, 0, 1, 3, 1, 0, 3, 3, 3, 0,
@@ -168,7 +170,7 @@ type CPU struct {
 	V         byte   // overflow flag
 	N         byte   // negative flag
 	interrupt byte   // interrupt type to perform
-	stall     int    // number of cycles to stall
+	stall     int    // number of cycles to stall，CPU挂起指定个周期
 	table     [256]func(*stepInfo)
 }
 
@@ -180,7 +182,7 @@ func NewCPU(console *Console) *CPU {
 }
 
 // createTable builds a function table for each instruction
-// 设定CPU的指令集
+// 设定CPU的指令集，其实是一个指令到指令处理函数的表
 func (c *CPU) createTable() {
 	c.table = [256]func(*stepInfo){
 		c.brk, c.ora, c.kil, c.slo, c.nop, c.ora, c.asl, c.slo,
@@ -218,6 +220,7 @@ func (c *CPU) createTable() {
 	}
 }
 
+// 保存CPU状态
 func (cpu *CPU) Save(encoder *gob.Encoder) error {
 	encoder.Encode(cpu.Cycles)
 	encoder.Encode(cpu.PC)
@@ -238,6 +241,7 @@ func (cpu *CPU) Save(encoder *gob.Encoder) error {
 	return nil
 }
 
+// 载入CPU状态
 func (cpu *CPU) Load(decoder *gob.Decoder) error {
 	decoder.Decode(&cpu.Cycles)
 	decoder.Decode(&cpu.PC)
@@ -310,6 +314,7 @@ func (cpu *CPU) compare(a, b byte) {
 }
 
 // Read16 reads two bytes using Read to return a double-word value
+// 读取两个字节并且返回一个两个字节
 func (cpu *CPU) Read16(address uint16) uint16 {
 	lo := uint16(cpu.Read(address))
 	hi := uint16(cpu.Read(address + 1))
@@ -327,12 +332,14 @@ func (cpu *CPU) read16bug(address uint16) uint16 {
 }
 
 // push pushes a byte onto the stack
+// 压栈
 func (cpu *CPU) push(value byte) {
 	cpu.Write(0x100|uint16(cpu.SP), value)
 	cpu.SP--
 }
 
 // pull pops a byte from the stack
+// 弹栈
 func (cpu *CPU) pull() byte {
 	cpu.SP++
 	return cpu.Read(0x100 | uint16(cpu.SP))
@@ -380,6 +387,7 @@ func (cpu *CPU) SetFlags(flags byte) {
 }
 
 // setZ sets the zero flag if the argument is zero
+// 如果为零则设置零flag
 func (cpu *CPU) setZ(value byte) {
 	if value == 0 {
 		cpu.Z = 1
@@ -389,6 +397,7 @@ func (cpu *CPU) setZ(value byte) {
 }
 
 // setN sets the negative flag if the argument is negative (high bit is set)
+// 如果不为零则设置非零flag
 func (cpu *CPU) setN(value byte) {
 	if value&0x80 != 0 {
 		cpu.N = 1
@@ -404,11 +413,14 @@ func (cpu *CPU) setZN(value byte) {
 }
 
 // triggerNMI causes a non-maskable interrupt to occur on the next cycle
+// 触发不可屏蔽中断，在下一个CPU周期这个中断会被处理
+// 也许不把中断处理函数放在主流程，而是直接放在这里会更加的符合CPU的工作方式？
 func (cpu *CPU) triggerNMI() {
 	cpu.interrupt = interruptNMI
 }
 
 // triggerIRQ causes an IRQ interrupt to occur on the next cycle
+// 触发普通中断，在下一个CPU周期这个中断会被处理
 func (cpu *CPU) triggerIRQ() {
 	if cpu.I == 0 {
 		cpu.interrupt = interruptIRQ
@@ -416,14 +428,17 @@ func (cpu *CPU) triggerIRQ() {
 }
 
 // stepInfo contains information that the instruction functions use
+// 指令执行时所需要的参数
 type stepInfo struct {
 	address uint16
 	pc      uint16
 	mode    byte
 }
 
+// 模拟CPU执行指令
 // Step executes a single CPU instruction
 func (cpu *CPU) Step() int {
+	// CPU挂起指定个周期
 	if cpu.stall > 0 {
 		cpu.stall--
 		return 1
@@ -431,19 +446,24 @@ func (cpu *CPU) Step() int {
 
 	cycles := cpu.Cycles
 
+	// 检测是否有中断需要进行处理
 	switch cpu.interrupt {
-	case interruptNMI:
+	case interruptNMI: // 不可屏蔽中断
 		cpu.nmi()
-	case interruptIRQ:
+	case interruptIRQ: // 普通的中断
 		cpu.irq()
 	}
+	// 此次中断已经处理完毕，清空中断
+	// 中断本身是边沿触发，而这里我们检测中断使用的是水平触发；所以我们这里需要额外的清除中断状态的操作
 	cpu.interrupt = interruptNone
 
+	// 从PC读取到当前的操作码
 	opcode := cpu.Read(cpu.PC)
 	mode := instructionModes[opcode]
 
 	var address uint16
 	var pageCrossed bool
+	// 根据寻址模型计算出真正的地址
 	switch mode {
 	case modeAbsolute:
 		address = cpu.Read16(cpu.PC + 1)
@@ -481,18 +501,22 @@ func (cpu *CPU) Step() int {
 		address = uint16(cpu.Read(cpu.PC+1)+cpu.Y) & 0xff
 	}
 
+	// 根据指令的字节数计算出下一次的PC
 	cpu.PC += uint16(instructionSizes[opcode])
+	// 计算周期
 	cpu.Cycles += uint64(instructionCycles[opcode])
 	if pageCrossed {
 		cpu.Cycles += uint64(instructionPageCycles[opcode])
 	}
 	info := &stepInfo{address, cpu.PC, mode}
+	// 从表中根据指令获取指令处理函数并执行
 	cpu.table[opcode](info)
 
 	return int(cpu.Cycles - cycles)
 }
 
 // NMI - Non-Maskable Interrupt
+// 不可屏蔽中断
 func (cpu *CPU) nmi() {
 	cpu.push16(cpu.PC)
 	cpu.php(nil)
@@ -502,6 +526,7 @@ func (cpu *CPU) nmi() {
 }
 
 // IRQ - IRQ Interrupt
+// 普通中断
 func (cpu *CPU) irq() {
 	cpu.push16(cpu.PC)
 	cpu.php(nil)
@@ -511,17 +536,20 @@ func (cpu *CPU) irq() {
 }
 
 // ADC - Add with Carry
+// 对A、C和指定地址的值做加法，并把值赋给A
 func (cpu *CPU) adc(info *stepInfo) {
 	a := cpu.A
 	b := cpu.Read(info.address)
 	c := cpu.C
 	cpu.A = a + b + c
 	cpu.setZN(cpu.A)
+	// 进位
 	if int(a)+int(b)+int(c) > 0xFF {
 		cpu.C = 1
 	} else {
 		cpu.C = 0
 	}
+	// 溢出
 	if (a^b)&0x80 == 0 && (a^cpu.A)&0x80 != 0 {
 		cpu.V = 1
 	} else {
@@ -530,12 +558,14 @@ func (cpu *CPU) adc(info *stepInfo) {
 }
 
 // AND - Logical AND
+// 对指定地址的值与A做and操作并把结果赋给A
 func (cpu *CPU) and(info *stepInfo) {
 	cpu.A = cpu.A & cpu.Read(info.address)
 	cpu.setZN(cpu.A)
 }
 
 // ASL - Arithmetic Shift Left
+// 算术左移
 func (cpu *CPU) asl(info *stepInfo) {
 	if info.mode == modeAccumulator {
 		cpu.C = (cpu.A >> 7) & 1

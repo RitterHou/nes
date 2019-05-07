@@ -191,6 +191,7 @@ func (ppu *PPU) Reset() {
 	ppu.writeOAMAddress(0)
 }
 
+// 读取调色板🎨？
 func (ppu *PPU) readPalette(address uint16) byte {
 	if address >= 16 && address%4 == 0 {
 		address -= 16
@@ -643,6 +644,7 @@ func (ppu *PPU) tick() {
 	if ppu.nmiDelay > 0 {
 		ppu.nmiDelay--
 		if ppu.nmiDelay == 0 && ppu.nmiOutput && ppu.nmiOccurred {
+			// 触发不可屏蔽中断
 			ppu.console.CPU.triggerNMI()
 		}
 	}
