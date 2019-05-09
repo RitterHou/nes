@@ -9,14 +9,17 @@ type PPU struct {
 	Memory           // memory interface
 	console *Console // reference to parent object
 
-	Cycle    int    // 0-340
-	ScanLine int    // 0-261, 0-239=visible, 240=post, 241-260=vblank, 261=pre
-	Frame    uint64 // frame counter
+	// PPU的渲染周期，PPU在每一个cycle都有着特定的任务
+	Cycle int // 0-340
+	// 横向扫描线
+	ScanLine int // 0-261, 0-239=visible, 240=post, 241-260=vblank, 261=pre
+	// 帧数
+	Frame uint64 // frame counter
 
 	// storage variables
-	paletteData   [32]byte
-	nameTableData [2048]byte
-	oamData       [256]byte
+	paletteData   [32]byte    // 调色板数据，通过RGB对FC的调色板颜色进行模拟
+	nameTableData [2048]byte  // 命名表数据，命名表用于存储chr在界面上的位置
+	oamData       [256]byte   // 存储sprites的数据
 	front         *image.RGBA // 前台的图像属性，最终该图片会通过opengl渲染出来
 	back          *image.RGBA // 背景的图像属性
 
@@ -564,6 +567,7 @@ func (ppu *PPU) renderPixel() {
 			color = background
 		}
 	}
+	// 从调色板中取出颜色并进行渲染
 	c := Palette[ppu.readPalette(uint16(color))%64]
 	ppu.back.SetRGBA(x, y, c)
 }
@@ -679,6 +683,7 @@ func (ppu *PPU) tick() {
 func (ppu *PPU) Step() {
 	ppu.tick()
 
+	// 开启渲染
 	renderingEnabled := ppu.flagShowBackground != 0 || ppu.flagShowSprites != 0
 	preLine := ppu.ScanLine == 261
 	visibleLine := ppu.ScanLine < 240
